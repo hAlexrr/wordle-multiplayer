@@ -35,6 +35,18 @@ div {
     justify-content: flex-start;
 }
 
+header p {
+  color: white;
+  font-weight: 700;
+  font-size:30px;
+  line-height:100%;
+  letter-spacing: 0.01em;
+  text-align: center;
+  left:0;
+  right:0;
+  pointer-events: none;
+}
+
 header .title {
     color: white;
     font-weight: 700;
@@ -160,7 +172,7 @@ button {
     font-weight: bold;
     border: 0;
     padding: 0;
-    margin: 0 6px 0 0;
+    margin: 2px;
     height: 58px;
     border-radius: 4px;
     cursor: pointer;
@@ -175,6 +187,28 @@ button {
     -webkit-tap-highlight-color: rgba(0,0,0,0.3);
 }
 
+button[data-state='absent'] {
+  background-color: #3a3a3c;
+  color: #ffffff;
+}
+
+button[data-state='correct'] {
+  background-color: #538d4e;
+  color: #ffffff;
+}
+
+button[data-state='present'] {
+  background-color: #c9b458;
+  color: #ffffff;
+}
+
+
+.tile[data-animation='PopIn'] {
+  animation-name: PopIn;
+  animation-duration: 250ms;
+  animation-timing-function: ease-in;
+}
+
 @keyframes PopIn {
     from {
       transform: scale(0.8);
@@ -184,6 +218,7 @@ button {
     40% {
       transform: scale(1.1);
       opacity: 1;
+      
     }
   }
   .tile[data-animation='flip-in'] {
