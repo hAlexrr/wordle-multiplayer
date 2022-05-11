@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     getWord().then((resolve) => {
         const board = document.querySelector(".board")
         const allTiles = document.querySelectorAll('.tile')
+        const allButtons = document.querySelectorAll('button')
         var row = 0
         var pos = 0
         var gameFinished = false
@@ -13,13 +14,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
         var prevCorrectLetters = 0
         var points = 0
 
+        allButtons.forEach(elem => {
+            elem.addEventListener('click', (e) => {
+                document.dispatchEvent(new KeyboardEvent('keydown', {key: e.target.attributes[0].value}))
+            })
+        })
+
         allTiles.forEach(elem => {
             elem.addEventListener("animationend", function (e){
                 e.target.attributes[2].value = 'Idle'
                 })
         })
-
-        console.log(`Game Word -> ${gameWord}`)
 
         document.addEventListener('keydown', (e) => {
             var gameRow = board.children.item(row)
@@ -65,7 +70,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 var correctLetters = 0
                 var keyboard = document.querySelectorAll('.keys')
                 for( var i = 0; i < guessedWord.length; i++){
-                    console.log(guessedWord[i])
                     var gamePos = gameItems.item(i)
 
                     var tile = gamePos.getElementsByClassName('tile')

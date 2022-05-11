@@ -72,7 +72,8 @@ header .title {
 }
 
 .tile{
-    width: 40px;
+    width: 55px;
+    height: 55px;
     display: inline-flex;
     justify-content: center;
     align-items: center;
@@ -127,7 +128,7 @@ header .title {
     background-color: #c9b458;
   }
   .tile[data-state='absent'] {
-    background-color: #818384;
+    background-color: #3a3a3c;
   }
 
   .tile[data-animation='pop'] {
