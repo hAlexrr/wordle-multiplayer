@@ -21,6 +21,16 @@
         </div>
     </header>
     <div id="game">
+        <div class="player-info">
+            <div class="player">
+                <h2 id="player1-username"></h2>
+                <h3 id="player1-points"></h3>
+            </div>
+            <div class="player">
+                <h2 id="player2-username"></h2>
+                <h3 id="player2-points"></h3>
+            </div>
+        </div>
         <div class="board-container">
             <div class="board" stye="width: 350px; height: 420px;">
                 <game-row length="5" letters="">
@@ -184,7 +194,7 @@
             <input type="text"  name="room" id="room" autocomplete="off">
             <div class="roomButtons">
                 <button id="joinRoom" class="roomButtons" onclick="joinRoom()">Join room</button>
-                <button id="createRoom" class="roomButtons" onclick="createRoom()">Create room</button>
+                <button id="updateUsername" class="roomButtons" onclick="updateUsername()">Update Username</button>
             </div>
         </game-settings>
     </div>

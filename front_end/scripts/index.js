@@ -14,7 +14,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     var prevCorrectLetters = 0
     var points = 0
 
+    createRoomOnJoin()
+    updatePlayerData(row, pos, points)
     sock.emit('choose word')
+
+    sock.on('updatePlayerList', updatePlayerList)
 
 
     allButtons.forEach(elem => {
@@ -78,7 +82,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
                     sock.emit('getMatchingLetters', guessedWord, function (letters) {
                         for( var i = 0; i < guessedWord.length; i++){
-                            console.log(letters[i])
                             var gamePos = gameItems.item(i)
             
                             var tile = gamePos.getElementsByClassName('tile')
@@ -125,6 +128,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                             console.log('Finished game')
                         }
                         pos = 0
+                        updatePlayerData(row, pos, points)
                     })
                 })
             })
@@ -146,45 +150,73 @@ document.addEventListener('DOMContentLoaded', (event) => {
             tile[0].setAttribute('data-state', 'empty')
             gameRow.setAttribute('letters', gameRow.getAttribute('letters').substring(0, pos) )
         }
+        updatePlayerData(row, pos, points)
     })
     
       
 })
+
+function updatePlayerData(row, pos, points){
+    sock.emit('updatePlayerData', row, pos, points, function() {
+        updatePlayerList()
+    })
+}
+
+function updatePlayerList(){
+    console.log("Updating player List")
+    let roomTB = document.getElementById('room')
+
+    let player1Username = document.getElementById('player1-username')
+    let player1Points = document.getElementById('player1-points')
+
+    let player2Username = document.getElementById('player2-username')
+    let player2Points = document.getElementById('player2-points')
+
+    sock.emit('getMyData', function(user) {
+        player1Username.innerHTML = user.username === '' || user.username === undefined ? "Player1" : user.username
+        player1Points.innerHTML = `Points: ${user.points}`
+    })
+
+    sock.emit('getPlayer2Data', roomTB.value, function(user) {
+        console.log(user)
+        player2Username.innerHTML = user.username === '' || user.username === undefined ? "" : user.username
+        player2Points.innerHTML = user.username === '' || user.username === undefined ? '' : `Points: ${user.points}`
+    })
+}
 
 function checkRoom(roomId) {
     let usernameTB = document.getElementById('username');
     console.log(`${usernameTB.value} has joined the room ${roomId}`)
 }
 
+function updateUsername(){
+    let usernameTB = document.getElementById('username')
+    let usernameLabel = document.getElementById('usernameLabel')
+
+    usernameLabel.innerHTML = "Username: " + usernameTB.value
+    sock.emit('updateUsername', usernameTB.value)
+}
+
 function joinRoom(){
+    let usernameTB = document.getElementById('username')
+    
+    if( usernameTB.value === '' )
+        return
+
     let roomTB = document.getElementById('room')
+    sock.emit('disconnectRoom')
     console.log(`Joining Room ... [${roomTB.value}]`)
     sock.emit('join room', roomTB.value, checkRoom)
 }
 
-function createRoom(){
-    let usernameTB = document.getElementById('username');
-
-    if ( usernameTB.value === '' ){
-        console.log('Please Enter a username')
-        return
-    }
-
-    let usernameLabel = document.getElementById('usernameLabel')
+function createRoomOnJoin(){
     let roomTB = document.getElementById('room')
     let roomLabel = document.getElementById('roomLabel')
-    let createRoomButton = document.getElementById('createRoom')
-    let joinRoombutton = document.getElementById('joinRoom')
 
     let roomId = generateRandomRoomID(Math.floor(Math.random() * (10 - 7) + 7))
-    usernameTB.style.display = 'none';
-    usernameLabel.innerHTML = `Username: ${usernameTB.value}`
     roomTB.value = roomId;
     roomLabel.innerHTML = `RoomID: ${roomId}`
-    createRoomButton.disabled = true;
-    joinRoombutton.click();
-    console.log(roomId)
-    
+    sock.emit('join room', roomTB.value, checkRoom)    
 }
 
 function generateRandomRoomID(len){

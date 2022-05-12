@@ -14,11 +14,12 @@ const io = socketio(server)
 const allWords = cleanAllWordsArray(fs.readFileSync(__dirname+'/words.txt', 'utf-8').split('\n'))
 
 let users = {}
+let rooms = {}
 
 io.on('connection', (sock) => {
     users[sock.id] = {
         username: '',
-        roomId: generateRandomRoomID(Math.floor(Math.random() * (10-5)+5)),
+        roomId: '',
         points: 0,
         word: '',
         row: 0,
@@ -26,15 +27,31 @@ io.on('connection', (sock) => {
     }
     console.log(sock.id)
 
+    sock.on('disconnectRoom', (room) => {
+        leaveRoom(sock)
+        console.log('Successfully disconnected from room ')
+    })
+
     sock.on('disconnect', () => {
         console.log(`Client Leaving -> ${sock.id}`)
         delete users[sock.id]
+        leaveRoom(sock)
+        console.log('ROOMS LEFT \n')
+        console.log(rooms)
     })
 
     sock.on('join room', (roomID, cb) => {
-            console.log(roomID)
-            console.log(cb)
             sock.join(roomID)
+            sendToOtherUser(roomID, sock)
+            users[sock.id].roomId = roomID
+            console.log( roomID in rooms )
+            if ( !(roomID in rooms) ){ 
+                rooms[roomID] = { [sock.id]: 'User'}
+            } else {
+                rooms[roomID][sock.id] = 'user'
+            }
+            console.log('Room Joined\n')
+            console.log(rooms)
             cb(roomID)
     })
 
@@ -72,6 +89,32 @@ io.on('connection', (sock) => {
         }
         callback(correctLetters)
     })
+
+    sock.on('updatePlayerData', (row, pos, points, cb) => {
+        users[sock.id].row = row
+        users[sock.id].pos = pos
+        users[sock.id].points = points
+
+        cb()
+    })
+
+    sock.on('updateUsername', (username) => {
+        users[sock.id].username = username
+        console.log('Username Updated\n')
+        console.log(users[sock.id])
+    })
+
+    sock.on('getMyData', (cb)=>{
+        cb(users[sock.id])
+    })
+
+    sock.on('getPlayer2Data', (RoomID, cb)=>{
+        for ( var key in rooms[RoomID] )
+            if ( key !== sock.id)
+                cb(users[key])
+    })
+
+
 })
 
 server.on('error', (error) => {
@@ -81,6 +124,20 @@ server.on('error', (error) => {
 server.listen(25352, () => {
     console.log('Server listening on port 25352')
 })
+
+function sendToOtherUser(roomID, sock) {
+    for ( var key in rooms[roomID] )
+        if ( key !== sock.id)
+            io.to(key).emit('updatePlayerList')
+}
+
+function leaveRoom(sock){
+    for ( var key in rooms ){
+        delete rooms[key][sock.id]
+        if ( Object.keys(rooms[key]).length == 0 )
+         delete rooms[key]
+    }
+}
 
 function cleanAllWordsArray(words) {
     let cleanArray = words
