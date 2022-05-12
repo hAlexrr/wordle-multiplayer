@@ -1,6 +1,11 @@
 
+const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+const sock = io();
+
 
 document.addEventListener('DOMContentLoaded', (event) => {
+
+
     //the event occurred 
     getWord().then((resolve) => {
         const board = document.querySelector(".board")
@@ -138,6 +143,51 @@ document.addEventListener('DOMContentLoaded', (event) => {
     })
       
 })
+
+function checkRoom(roomId) {
+    let usernameTB = document.getElementById('username');
+    console.log(`${usernameTB.value} has joined the room ${roomId}`)
+}
+
+function joinRoom(){
+    let roomTB = document.getElementById('room')
+    console.log(`Joining Room ... [${roomTB.value}]`)
+    sock.emit('join room', roomTB.value, checkRoom)
+}
+
+function createRoom(){
+    let usernameTB = document.getElementById('username');
+
+    if ( usernameTB.value === '' ){
+        console.log('Please Enter a username')
+        return
+    }
+
+    let usernameLabel = document.getElementById('usernameLabel')
+    let roomTB = document.getElementById('room')
+    let roomLabel = document.getElementById('roomLabel')
+    let createRoomButton = document.getElementById('createRoom')
+    let joinRoombutton = document.getElementById('joinRoom')
+
+    let roomId = generateRandomRoomID(Math.floor(Math.random() * (10 - 7) + 7))
+    usernameTB.style.display = 'none';
+    usernameLabel.innerHTML = `Username: ${usernameTB.value}`
+    roomTB.value = roomId;
+    roomLabel.innerHTML = `RoomID: ${roomId}`
+    createRoomButton.disabled = true;
+    joinRoombutton.click();
+    console.log(roomId)
+    
+}
+
+function generateRandomRoomID(len){
+    let id = ''
+
+    for(let x = 0; x < len; x++){
+        id += possible.charAt(Math.floor(Math.random() * possible.length))
+    }
+    return id
+}
 
 async function getWord() {    
     return fetch('words.txt')

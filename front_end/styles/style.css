@@ -26,6 +26,10 @@ div {
     flex-flow: column;
 }
 
+.roomButtons{
+  display:inline-flex;
+}
+
 .menu-left {
     display: flex;
     margin: 0;
@@ -33,6 +37,16 @@ div {
     align-items: center;
     width: 70px;
     justify-content: flex-start;
+}
+
+.menu-right{
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+#Points{
+  margin-left: 20px;
 }
 
 header p {
@@ -45,6 +59,24 @@ header p {
   left:0;
   right:0;
   pointer-events: none;
+}
+game-settings{
+  display:grid;
+  width: 150px;
+  margin: auto;
+}
+
+.labels{
+  color:white;
+  font-weight: 700;
+  font-size:15px;
+  line-height:100%;
+  letter-spacing: 0.01em;
+  text-align: left;
+  left:0;
+  right:0;
+  pointer-events: none;
+  margin:10px;
 }
 
 header .title {
