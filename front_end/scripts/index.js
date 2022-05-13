@@ -5,6 +5,8 @@ var textBoxFocus = false
 var points = 0
 var row = 0
 var pos = 0
+var prevCorrectLetters = 0
+var gameFinished = false
 
 
 
@@ -15,16 +17,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const p2Board = document.querySelector("#player2-board")
     const allTiles = document.querySelectorAll('.tile')
     const allButtons = document.querySelectorAll('button')
-    
-    var gameFinished = false
-    var prevCorrectLetters = 0
 
     p2Board.style.display = 'none'
     createRoomOnJoin()
-    updatePlayerData(row, pos, points)
+    updatePlayerData()
     sock.emit('choose word')
 
     sock.on('updatePlayerList', updatePlayerList)
+    sock.on('resetPlayerBoard', resetPlayerBoard)
+    sock.on('resetPlayerKeyboard', resetKeyboard)
+    sock.on('resetPlayerStats', resetPlayerStats)
+    sock.on('showGameBoardsToAll', showOpponentBoard)
 
 
     allButtons.forEach(elem => {
@@ -45,11 +48,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         if (textBoxFocus)
             return
+        
+        if( gameFinished )
+            return
 
         if(e.key.match(/[a-z]/i) && e.key.length === 1){
-
-            if( gameFinished )
-                return
 
             if( pos >= gameItems.length)
                 return
@@ -62,9 +65,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             setTile(tile, 'tbd', e.key, gameRow);
         }
         else if ( e.key === 'Enter' ) {
-            if( gameFinished )
-                return
-
             if ( pos !== gameItems.length )
                 return
             
@@ -77,74 +77,41 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 if (!realWord)
                     return
 
-
-                var correctLetters = 0
                 var keyboard = document.querySelectorAll('.keys')
 
                 sock.emit('doesWordsMatch', guessedWord, function (match) {
                     if (match){
                         console.log('match')
-                        gameFinished = true;
+                        toggleGameFinishedStatus()
                     }
 
                     sock.emit('getMatchingLetters', guessedWord, function (letters) {
-                        for( var i = 0; i < guessedWord.length; i++){
-                            var gamePos = gameItems.item(i)
-            
-                            var tile = gamePos.getElementsByClassName('tile')
-                            if(letters[i] == 'c'){
-                                correctLetters += 1
-                                tile[0].setAttribute('data-animation', 'flip-out')
-                                tile[0].setAttribute('data-state', 'correct')
-                                keyboard.forEach(elem => {
-                                    if ( elem.getAttribute('data-key') === guessedWord[i] ){
-                                        elem.setAttribute('data-state', 'correct')
-                                        return
-                                    }                        
-                                })
-                            }
-                            else if(letters[i] == 'p'){
-                                tile[0].setAttribute('data-animation', 'flip-out')
-                                tile[0].setAttribute('data-state', 'present')
-                                keyboard.forEach(elem => {
-                                    if ( elem.getAttribute('data-key') === guessedWord[i] ){
-                                        elem.setAttribute('data-state', 'present')
-                                        return
-                                    }                        
-                                })
-                            }
-                            else {
-                                tile[0].setAttribute('data-animation', 'flip-out')
-                                tile[0].setAttribute('data-state', 'absent')
-                                keyboard.forEach(elem => {
-                                    if ( elem.getAttribute('data-key') === guessedWord[i] ){
-                                        elem.setAttribute('data-state', 'absent')
-                                        return
-                                    }                        
-                                })
-                            }
-                        }
+                        var correctLetters = drawGameBoard(guessedWord, gameItems, letters, keyboard);
                         if(correctLetters != prevCorrectLetters){
-                            points += Math.pow(2, correctLetters-prevCorrectLetters)
+                            points += Math.pow(2, correctLetters-prevCorrectLetters)*(((6-row)/6)/100)
                             setPoints()
                             prevCorrectLetters = correctLetters
                         }
                         row += 1
-                        if(row >= 6){
-                            gameFinished = true
+                        if(row >= 6 && !gameFinished){
+                            toggleGameFinishedStatus()
                             console.log('Finished game')
                         }
                         pos = 0
-                        updatePlayerData(row, pos, points)
-                        sendBoardData(guessedWord)
+                        updatePlayerData()
+                        sendBoardData(guessedWord, letters)
+                    })
+                    sock.emit('checkGameStatus', function (bothFinished, board=null) {
+                        if(!bothFinished || board === null)
+                            return
+
+                        sock.emit('showGameBoardsToAll')
+                        showOpponentBoard(board)
                     })
                 })
             })
         }
         else if ( e.key === 'Backspace'){
-            if( gameFinished )
-                return
-
             if ( pos <= 0 )
                 return
 
@@ -158,11 +125,57 @@ document.addEventListener('DOMContentLoaded', (event) => {
             tile[0].setAttribute('data-state', 'empty')
             gameRow.setAttribute('letters', gameRow.getAttribute('letters').substring(0, pos) )
         }
-        updatePlayerData(row, pos, points)
+        updatePlayerData()
     })
     
       
 })
+
+function drawGameBoard(guessedWord, gameItems, letters, keyboard, changeKeyboard = true, opBoard=false) {
+    var correctLetters = 0
+    for (var i = 0; i < guessedWord.length; i++) {
+        var gamePos = gameItems.item(i);
+
+        var tile = gamePos.getElementsByClassName('tile');
+        if(opBoard)
+            setTile(tile, 'tbd', guessedWord[i], null)
+        if (letters[i] == 'c') {
+            correctLetters += 1;
+            tile[0].setAttribute('data-animation', 'flip-out');
+            tile[0].setAttribute('data-state', 'correct');
+            if ( changeKeyboard )
+                keyboard.forEach(elem => {
+                    if (elem.getAttribute('data-key') === guessedWord[i]) {
+                        elem.setAttribute('data-state', 'correct');
+                        return;
+                    }
+            });
+        }
+        else if (letters[i] == 'p') {
+            tile[0].setAttribute('data-animation', 'flip-out');
+            tile[0].setAttribute('data-state', 'present');
+            if ( changeKeyboard )
+                keyboard.forEach(elem => {
+                    if (elem.getAttribute('data-key') === guessedWord[i]) {
+                        elem.setAttribute('data-state', 'present');
+                        return;
+                    }
+            });
+        }
+        else {
+            tile[0].setAttribute('data-animation', 'flip-out');
+            tile[0].setAttribute('data-state', 'absent');
+            if ( changeKeyboard )
+                keyboard.forEach(elem => {
+                    if (elem.getAttribute('data-key') === guessedWord[i]) {
+                        elem.setAttribute('data-state', 'absent');
+                        return;
+                    }
+            });
+        }
+    }
+    return correctLetters;
+}
 
 function setPoints(){
     document.getElementById('Points').innerHTML = `Points: ${points}`
@@ -172,15 +185,21 @@ function setTile(tile, state, value, gameRow, reset=false) {
     tile[0].setAttribute('data-animation', 'PopIn');
     tile[0].setAttribute('data-state', state);
     tile[0].innerHTML = value;
-    if( !reset ){
-        gameRow.setAttribute('letters', gameRow.getAttribute('letters') + value);
-        return
+    if(gameRow !== null) {
+        if( !reset ){
+            gameRow.setAttribute('letters', gameRow.getAttribute('letters') + value);
+            return
+        }
+        gameRow.setAttribute('letters', '');
     }
-    gameRow.setAttribute('letters', '');
 }
 
-function sendBoardData(guessedWord){
-    sock.emit('saveBoardData', guessedWord)
+function sendBoardData(guessedWord, letters){
+    sock.emit('saveBoardData', guessedWord, letters)
+}
+
+function resetPlayerBoardData(){
+    sock.emit('resetBoardData')
 }
 
 function onTextboxFocus() {
@@ -191,11 +210,12 @@ function onTextboxUnFocus() {
     textBoxFocus = false
 }
 
-function updatePlayerData(row, pos, points){
-    sock.emit('updatePlayerData', row, pos, points, function() {
+function updatePlayerData(){
+    sock.emit('updatePlayerData', row, pos, points, gameFinished, function() {
         updatePlayerList()
     })
 }
+
 function updatePlayerList(){
     console.log("Updating player List")
     let roomTB = document.getElementById('room')
@@ -247,6 +267,7 @@ function checkRoom(roomId, roomFull=false) {
     console.log(`${usernameTB.value} has joined the room ${roomId}`)
     resetKeyboard()
     resetPlayerBoard()
+    resetPlayerBoardData()
 }
 
 function updateUsername(){
@@ -269,11 +290,8 @@ function joinRoom(){
     if( usernameTB.value !== usernameLabel.innerHTML.split(':')[1].replace(' ', ''))
         updateUsername()
 
-    row = 0
-    pos = 0
-    points = 0
-    setPoints()
-    updatePlayerData(row, pos, points)
+    resetPlayerStats()
+    updatePlayerData()
     sock.emit('disconnectRoom', roomTB.value)
     console.log(`Joining Room ... [${roomTB.value}]`)
     sock.emit('join room', roomTB.value, checkRoom)
@@ -306,6 +324,11 @@ async function getWord() {
         .catch(() => console.error)
 }
 
+function toggleGameFinishedStatus() {
+    gameFinished = !gameFinished
+    updatePlayerData()
+}
+
 function arrayContains (words, word){
     return (words.indexOf(word) > -1)
 }
@@ -329,10 +352,34 @@ function resetPlayerBoard(player=1){
     }
 }
 
+function resetPlayerStats(){
+    row = 0
+    pos = 0
+    points = 0
+    prevCorrectLetters = 0
+    gameFinished = false
+    setPoints()
+    updatePlayerData()
+}
+
 function resetKeyboard(){
     var keyboard = document.querySelectorAll('.keys')
 
     keyboard.forEach(elem => {
         elem.removeAttribute('data-state')
     })
+}
+
+function showOpponentBoard(boardData) {
+    const board = document.querySelector("#player2-board")
+    console.log('boardData')
+    console.log(boardData)
+    for( var row = 0; row < 6; row++ ){
+        var guessedWord = boardData[row]
+        var gameRow = board.children.item(row)
+        var gameItems = gameRow.getElementsByClassName('row')[0].children
+        var letters = boardData.letter[row]
+
+        drawGameBoard( guessedWord, gameItems, JSON.parse(letters), undefined, false, true)
+    }
 }

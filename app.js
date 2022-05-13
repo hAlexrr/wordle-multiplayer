@@ -25,16 +25,25 @@ io.on('connection', (sock) => {
         points: 0,
         word: '',
         row: 0,
-        pos: 0
+        pos: 0,
+        gameFinished: false
     }
 
     boards[sock.id] = {
-        row1: '',
-        row2: '',
-        row3: '',
-        row4: '',
-        row5: '',
-        row6: ''
+        0: '',
+        1: '',
+        2: '',
+        3: '',
+        4: '',
+        5: '',
+        letter: {
+            0: '',
+            1: '',
+            2: '',
+            3: '',
+            4: '',
+            5: ''
+        }
     }
     console.log(sock.id)
 
@@ -46,6 +55,9 @@ io.on('connection', (sock) => {
 
     sock.on('disconnect', () => {
         console.log(`Client Leaving -> ${sock.id}`)
+        sendToOtherUser(users[sock.id].roomId, sock, 'resetPlayerStats')
+        sendToOtherUser(users[sock.id].roomId, sock, 'resetPlayerBoard')
+        sendToOtherUser(users[sock.id].roomId, sock, 'resetPlayerKeyboard')
         leaveRoom(sock)
         delete users[sock.id]
         console.log('ROOMS LEFT \n')
@@ -53,23 +65,26 @@ io.on('connection', (sock) => {
     })
 
     sock.on('join room', (roomID, cb) => {
-        console.log(rooms)
-            if( ( rooms[roomID] !== null && rooms[roomID] !== undefined) && Object.keys(rooms[roomID]).length >= 2){
-                cb(roomID, true)
-                return
-            }
 
-            sock.join(roomID)
-            users[sock.id].roomId = roomID
-            if ( !(roomID in rooms) ){ 
-                rooms[roomID] = { [sock.id]: 'User'}
-            } else {
-                rooms[roomID][sock.id] = 'user'
-            }
-            console.log('Room Joined\n')
-            console.log(rooms)
-            sendToOtherUser(roomID, sock, 'updatePlayerList')
-            cb(roomID)
+        if( ( rooms[roomID] !== null && rooms[roomID] !== undefined) && Object.keys(rooms[roomID]).length >= 2){
+            cb(roomID, true)
+            return
+        }   
+
+        sock.join(roomID)
+        users[sock.id].roomId = roomID
+        if ( !(roomID in rooms) ){ 
+            rooms[roomID] = { [sock.id]: 'User'}
+        } else {
+            rooms[roomID][sock.id] = 'user'
+        }
+        var word = allWords[getRandomInt(allWords.length)]  
+
+        console.log('Room Joined\n')
+        console.log(rooms)
+        changeWordForRoom(word, roomID)
+        sendRestToPlayer(roomID, sock);
+        cb(roomID)
     })
 
     sock.on('choose word', () => {
@@ -107,10 +122,12 @@ io.on('connection', (sock) => {
         callback(correctLetters)
     })
 
-    sock.on('updatePlayerData', (row, pos, points, cb) => {
+    sock.on('updatePlayerData', (row, pos, points, gameFinished, cb) => {
+        // console.log(row, pos, points, gameFinished, cb)
         users[sock.id].row = row
         users[sock.id].pos = pos
         users[sock.id].points = points
+        users[sock.id].gameFinished = gameFinished
         sendToOtherUser(users[sock.id].roomId, sock, 'updatePlayerList')
         cb()
     })
@@ -131,16 +148,63 @@ io.on('connection', (sock) => {
             cb( undefined )
     })
 
-    sock.on('saveBoardData', (guessWord) => {
+    sock.on('saveBoardData', (guessWord, letters) => {
         //This will save the board on the last row
         for ( var row in boards[sock.id] )
         {
-            if( boards[sock.id][row] === ''){
+            if( boards[sock.id][row] === '' && typeof boards[sock.id][row] !== 'object' ){
                 boards[sock.id][row] = guessWord
                 break
             }
         }
+
+        for ( var row in boards[sock.id].letter )
+        {
+            if( boards[sock.id].letter[row] === '' && typeof boards[sock.id][row] !== 'object' ){
+                boards[sock.id].letter[row] = JSON.stringify(letters) 
+                break
+            }
+        }
+
+        
+        console.log(boards[sock.id])
     })
+
+    sock.on('resetBoardData', () => {
+        //This will reset the board data
+        boards[sock.id] = {
+            0: '',
+            1: '',
+            2: '',
+            3: '',
+            4: '',
+            5: '',
+            letter: {
+                0: '',
+                1: '',
+                2: '',
+                3: '',
+                4: '',
+                5: ''
+            }
+        }
+    })
+
+    sock.on('checkGameStatus', (cb) => {
+        var opID = getOpponentSockId(users[sock.id].roomId, sock.id)
+        if(opID === null)
+            return
+
+        if (users[sock.id].gameFinished && users[opID].gameFinished)
+            cb(true, boards[opID])
+
+        cb(false)
+    })
+
+    sock.on('showGameBoardsToAll', () => {
+        sendToOtherUser(users[sock.id].roomId, sock, 'showGameBoardsToAll', boards[sock.id])
+    })
+    
 })
 
 server.on('error', (error) => {
@@ -151,17 +215,46 @@ server.listen(25352, () => {
     console.log('Server listening on port 25352')
 })
 
-function sendToOtherUser(roomID, sock, event) {
-    for ( var key in rooms[roomID] )
-        if ( key !== sock.id) {
-            console.log(`Sending to user ${key}`)
-            io.to(key).emit(event)
+function sendRestToPlayer(roomID, sock) {
+    sendToOtherUser(roomID, sock, 'resetPlayerStats');
+    sendToOtherUser(roomID, sock, 'resetPlayerBoard');
+    sendToOtherUser(roomID, sock, 'resetBoardData');
+    sendToOtherUser(roomID, sock, 'resetPlayerKeyboard');
+    sendToOtherUser(roomID, sock, 'updatePlayerList');
+}
+
+function changeWordForRoom(word, roomID){
+    for ( var user in rooms[roomID] ){
+        users[user].word = word
+    }
+    console.log('Changed room word')
+    console.log(word)
+}
+
+function getOpponentSockId(roomID, sockID){
+    for ( var key in rooms[roomID] ){
+        if ( key !== sockID) {
+            return key
         }
+    }
+    return null
+}
+
+function sendToOtherUser(roomID, sock, event, data=null) {
+    var key = getOpponentSockId(roomID, sock.id)
+    if ( key !== null){
+        if( data !== null ){
+            io.to(key).emit(event, data)
+            return
+        }
+        io.to(key).emit(event)
+    }
 }
 
 function leaveRoom(sock, room=''){
     if ( users[sock.id] !== undefined ){
         sendToOtherUser(users[sock.id].roomId, sock, 'updatePlayerList')
+        sendRestToPlayer(users[sock.id].roomId, sock)
         users[sock.id].roomId = room !== '' ? room : ''
     }
 
@@ -177,16 +270,6 @@ function cleanAllWordsArray(words) {
     for(var i = 0; i < cleanArray.length; i++)
         cleanArray[i] = cleanArray[i].replace(/(\r\n|\n|\r)/gm,"")
     return cleanArray
-}
-
-function generateRandomRoomID(len){
-    const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-    let id = ''
-
-    for(let x = 0; x < len; x++){
-        id += possible.charAt(Math.floor(Math.random() * possible.length))
-    }
-    return id
 }
 
 function getRandomInt(max){
