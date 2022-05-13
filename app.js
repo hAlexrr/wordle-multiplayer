@@ -14,9 +14,11 @@ const io = socketio(server)
 const allWords = cleanAllWordsArray(fs.readFileSync(__dirname+'/words.txt', 'utf-8').split('\n'))
 
 let users = {}
+let boards = {}
 let rooms = {}
 
 io.on('connection', (sock) => {
+
     users[sock.id] = {
         username: '',
         roomId: '',
@@ -24,6 +26,14 @@ io.on('connection', (sock) => {
         word: '',
         row: 0,
         pos: 0
+    }
+    boards[sock.id] = {
+        row1: '',
+        row2: '',
+        row3: '',
+        row4: '',
+        row5: '',
+        row6: ''
     }
     console.log(sock.id)
 
@@ -42,7 +52,7 @@ io.on('connection', (sock) => {
 
     sock.on('join room', (roomID, cb) => {
             sock.join(roomID)
-            sendToOtherUser(roomID, sock)
+            sendToOtherUser(roomID, sock, 'updatePlayerList')
             users[sock.id].roomId = roomID
             console.log( roomID in rooms )
             if ( !(roomID in rooms) ){ 
@@ -50,8 +60,8 @@ io.on('connection', (sock) => {
             } else {
                 rooms[roomID][sock.id] = 'user'
             }
-            console.log('Room Joined\n')
-            console.log(rooms)
+            // console.log('Room Joined\n')
+            // console.log(rooms)
             cb(roomID)
     })
 
@@ -94,14 +104,12 @@ io.on('connection', (sock) => {
         users[sock.id].row = row
         users[sock.id].pos = pos
         users[sock.id].points = points
-
+        sendToOtherUser(users[sock.id].roomId, sock, 'updatePlayerList')
         cb()
     })
 
     sock.on('updateUsername', (username) => {
         users[sock.id].username = username
-        console.log('Username Updated\n')
-        console.log(users[sock.id])
     })
 
     sock.on('getMyData', (cb)=>{
@@ -110,11 +118,21 @@ io.on('connection', (sock) => {
 
     sock.on('getPlayer2Data', (RoomID, cb)=>{
         for ( var key in rooms[RoomID] )
-            if ( key !== sock.id)
+            if ( key !== sock.id){
                 cb(users[key])
+            }
     })
 
-
+    sock.on('saveBoardData', (guessWord) => {
+        //This will save the board on the last row
+        for ( var row in boards[sock.id] )
+        {
+            if( boards[sock.id][row] === ''){
+                boards[sock.id][row] = guessWord
+                break
+            }
+        }
+    })
 })
 
 server.on('error', (error) => {
@@ -125,10 +143,12 @@ server.listen(25352, () => {
     console.log('Server listening on port 25352')
 })
 
-function sendToOtherUser(roomID, sock) {
+function sendToOtherUser(roomID, sock, event) {
     for ( var key in rooms[roomID] )
-        if ( key !== sock.id)
-            io.to(key).emit('updatePlayerList')
+        if ( key !== sock.id) {
+            console.log(`Sending to user ${key}`)
+            io.to(key).emit(event)
+        }
 }
 
 function leaveRoom(sock){

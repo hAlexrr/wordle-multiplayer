@@ -1,6 +1,8 @@
 const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 const sock = io();
 
+var textBoxFocus = false
+
 
 document.addEventListener('DOMContentLoaded', (event) => {
 
@@ -37,6 +39,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         var gameRow = board.children.item(row)
         var gameItems = gameRow.getElementsByClassName('row')[0].children
         if(e.key.match(/[a-z]/i) && e.key.length === 1){
+
+            if (textBoxFocus)
+                return
 
             if( gameFinished )
                 return
@@ -129,6 +134,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         }
                         pos = 0
                         updatePlayerData(row, pos, points)
+                        sendBoardData(guessedWord)
                     })
                 })
             })
@@ -156,12 +162,23 @@ document.addEventListener('DOMContentLoaded', (event) => {
       
 })
 
+function sendBoardData(guessedWord){
+    sock.emit('saveBoardData', guessedWord)
+}
+
+function onTextboxFocus() {
+    textBoxFocus = true
+}
+
+function onTextboxUnFocus() {
+    textBoxFocus = false
+}
+
 function updatePlayerData(row, pos, points){
     sock.emit('updatePlayerData', row, pos, points, function() {
         updatePlayerList()
     })
 }
-
 function updatePlayerList(){
     console.log("Updating player List")
     let roomTB = document.getElementById('room')
@@ -185,7 +202,12 @@ function updatePlayerList(){
 }
 
 function checkRoom(roomId) {
+    let roomTB = document.getElementById('room')
+    let roomLabel = document.getElementById('roomLabel')
     let usernameTB = document.getElementById('username');
+
+    roomTB.value = roomId;
+    roomLabel.innerHTML = `RoomID: ${roomId}`
     console.log(`${usernameTB.value} has joined the room ${roomId}`)
 }
 
@@ -199,24 +221,22 @@ function updateUsername(){
 
 function joinRoom(){
     let usernameTB = document.getElementById('username')
+    let roomTB = document.getElementById('room')
+    let roomLabel = document.getElementById('roomLabel')
     
-    if( usernameTB.value === '' )
+    if( usernameTB.value === '' ||  roomTB.value === roomLabel.innerHTML.split(':')[1].replace(' ', ''))
         return
 
-    let roomTB = document.getElementById('room')
     sock.emit('disconnectRoom')
     console.log(`Joining Room ... [${roomTB.value}]`)
     sock.emit('join room', roomTB.value, checkRoom)
 }
 
 function createRoomOnJoin(){
-    let roomTB = document.getElementById('room')
-    let roomLabel = document.getElementById('roomLabel')
-
     let roomId = generateRandomRoomID(Math.floor(Math.random() * (10 - 7) + 7))
-    roomTB.value = roomId;
-    roomLabel.innerHTML = `RoomID: ${roomId}`
-    sock.emit('join room', roomTB.value, checkRoom)    
+
+    sock.emit('join room', roomId, checkRoom)    
+    updateUsername()
 }
 
 function generateRandomRoomID(len){

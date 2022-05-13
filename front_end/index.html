@@ -22,11 +22,11 @@
     </header>
     <div id="game">
         <div class="player-info">
-            <div class="player">
+            <div class="player" id="player1">
                 <h2 id="player1-username"></h2>
                 <h3 id="player1-points"></h3>
             </div>
-            <div class="player">
+            <div class="player" id="player2">
                 <h2 id="player2-username"></h2>
                 <h3 id="player2-points"></h3>
             </div>
@@ -188,10 +188,10 @@
             </div>
         </game-keyboard>
         <game-settings>
-            <label for="username" class="labels" id="usernameLabel">Username: </label>
-            <input type="text"  name="username" id="username" autocomplete="off">
+            <label for="username" class="labels" id="usernameLabel">Username: Player</label>
+            <input type="text"  name="username" id="username" onfocus="onTextboxFocus()" onblur="onTextboxUnFocus()" autocomplete="off" value="Player">
             <label for="room" class="labels" id="roomLabel" >RoomID: </label>
-            <input type="text"  name="room" id="room" autocomplete="off">
+            <input type="text"  name="room" id="room" onfocus="onTextboxFocus()" onblur="onTextboxUnFocus()" autocomplete="off">
             <div class="roomButtons">
                 <button id="joinRoom" class="roomButtons" onclick="joinRoom()">Join room</button>
                 <button id="updateUsername" class="roomButtons" onclick="updateUsername()">Update Username</button>

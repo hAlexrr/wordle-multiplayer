@@ -26,6 +26,20 @@ div {
     flex-flow: column;
 }
 
+.player-info {
+  display: flex;
+}
+
+#player1 {
+  width: 70px;
+  justify-content: flex-start;
+}
+#player2 {
+  margin: auto;
+  position: absolute;
+  right: 35%;
+}
+
 .roomButtons{
   display:inline-flex;
 }
