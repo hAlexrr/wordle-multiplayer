@@ -7,7 +7,8 @@ var textBoxFocus = false
 document.addEventListener('DOMContentLoaded', (event) => {
 
     //the event occurred 
-    const board = document.querySelector(".board")
+    const board = document.querySelector("#player1-board")
+    const p2Board = document.querySelector("#player2-board")
     const allTiles = document.querySelectorAll('.tile')
     const allButtons = document.querySelectorAll('button')
     var row = 0
@@ -16,6 +17,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     var prevCorrectLetters = 0
     var points = 0
 
+    p2Board.style.display = 'none'
     createRoomOnJoin()
     updatePlayerData(row, pos, points)
     sock.emit('choose word')
@@ -38,10 +40,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     document.addEventListener('keydown', (e) => {
         var gameRow = board.children.item(row)
         var gameItems = gameRow.getElementsByClassName('row')[0].children
-        if(e.key.match(/[a-z]/i) && e.key.length === 1){
 
-            if (textBoxFocus)
-                return
+        if (textBoxFocus)
+            return
+
+        if(e.key.match(/[a-z]/i) && e.key.length === 1){
 
             if( gameFinished )
                 return
@@ -182,10 +185,12 @@ function updatePlayerData(row, pos, points){
 function updatePlayerList(){
     console.log("Updating player List")
     let roomTB = document.getElementById('room')
+    const p2Board = document.querySelector("#player2-board")
 
     let player1Username = document.getElementById('player1-username')
     let player1Points = document.getElementById('player1-points')
 
+    let player2Div = document.getElementById('player2')
     let player2Username = document.getElementById('player2-username')
     let player2Points = document.getElementById('player2-points')
 
@@ -196,13 +201,30 @@ function updatePlayerList(){
 
     sock.emit('getPlayer2Data', roomTB.value, function(user) {
         console.log(user)
-        player2Username.innerHTML = user.username === '' || user.username === undefined ? "" : user.username
-        player2Points.innerHTML = user.username === '' || user.username === undefined ? '' : `Points: ${user.points}`
+        if( user === null || user === undefined) {
+            if(player2Div.style.display !== 'none' && p2Board.style.display !== 'none'){
+                player2Div.style.display = 'none'
+                p2Board.style.display = 'none'
+            }
+            return
+        } else if ( user !== null || user !== undefined && player2Div.style.display === 'none' && p2Board.style.display === 'none') {
+            player2Div.style.display = 'block'
+            p2Board.style.display = 'grid'
+        }
+        player2Username.innerHTML =  user.username === ''  ? "" : user.username
+        player2Points.innerHTML =  user.username === ''  ? '' : `Points: ${user.points}`
     })
 }
 
-function checkRoom(roomId) {
+function checkRoom(roomId, roomFull=false) {
     let roomTB = document.getElementById('room')
+
+    if ( roomFull ){
+        roomTB.value += ' [Room Full]';
+        console.log('The room you are trying to join is currently full.')
+        return
+    }
+    
     let roomLabel = document.getElementById('roomLabel')
     let usernameTB = document.getElementById('username');
 
@@ -221,13 +243,17 @@ function updateUsername(){
 
 function joinRoom(){
     let usernameTB = document.getElementById('username')
+    let usernameLabel = document.getElementById('usernameLabel')
     let roomTB = document.getElementById('room')
     let roomLabel = document.getElementById('roomLabel')
     
     if( usernameTB.value === '' ||  roomTB.value === roomLabel.innerHTML.split(':')[1].replace(' ', ''))
         return
 
-    sock.emit('disconnectRoom')
+    if( usernameTB.value !== usernameLabel.innerHTML.split(':')[1].replace(' ', ''))
+        updateUsername()
+
+    sock.emit('disconnectRoom', roomTB.value)
     console.log(`Joining Room ... [${roomTB.value}]`)
     sock.emit('join room', roomTB.value, checkRoom)
 }

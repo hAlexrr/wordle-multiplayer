@@ -27,6 +27,7 @@ io.on('connection', (sock) => {
         row: 0,
         pos: 0
     }
+
     boards[sock.id] = {
         row1: '',
         row2: '',
@@ -38,30 +39,36 @@ io.on('connection', (sock) => {
     console.log(sock.id)
 
     sock.on('disconnectRoom', (room) => {
-        leaveRoom(sock)
+        leaveRoom(sock, room)
+        console.log(rooms)
         console.log('Successfully disconnected from room ')
     })
 
     sock.on('disconnect', () => {
         console.log(`Client Leaving -> ${sock.id}`)
-        delete users[sock.id]
         leaveRoom(sock)
+        delete users[sock.id]
         console.log('ROOMS LEFT \n')
         console.log(rooms)
     })
 
     sock.on('join room', (roomID, cb) => {
+        console.log(rooms)
+            if( ( rooms[roomID] !== null && rooms[roomID] !== undefined) && Object.keys(rooms[roomID]).length >= 2){
+                cb(roomID, true)
+                return
+            }
+
             sock.join(roomID)
-            sendToOtherUser(roomID, sock, 'updatePlayerList')
             users[sock.id].roomId = roomID
-            console.log( roomID in rooms )
             if ( !(roomID in rooms) ){ 
                 rooms[roomID] = { [sock.id]: 'User'}
             } else {
                 rooms[roomID][sock.id] = 'user'
             }
-            // console.log('Room Joined\n')
-            // console.log(rooms)
+            console.log('Room Joined\n')
+            console.log(rooms)
+            sendToOtherUser(roomID, sock, 'updatePlayerList')
             cb(roomID)
     })
 
@@ -119,8 +126,9 @@ io.on('connection', (sock) => {
     sock.on('getPlayer2Data', (RoomID, cb)=>{
         for ( var key in rooms[RoomID] )
             if ( key !== sock.id){
-                cb(users[key])
+                cb( users[key] )
             }
+            cb( undefined )
     })
 
     sock.on('saveBoardData', (guessWord) => {
@@ -151,7 +159,12 @@ function sendToOtherUser(roomID, sock, event) {
         }
 }
 
-function leaveRoom(sock){
+function leaveRoom(sock, room=''){
+    if ( users[sock.id] !== undefined ){
+        sendToOtherUser(users[sock.id].roomId, sock, 'updatePlayerList')
+        users[sock.id].roomId = room !== '' ? room : ''
+    }
+
     for ( var key in rooms ){
         delete rooms[key][sock.id]
         if ( Object.keys(rooms[key]).length == 0 )
