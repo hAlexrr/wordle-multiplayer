@@ -2,6 +2,10 @@ const possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789
 const sock = io();
 
 var textBoxFocus = false
+var points = 0
+var row = 0
+var pos = 0
+
 
 
 document.addEventListener('DOMContentLoaded', (event) => {
@@ -11,11 +15,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const p2Board = document.querySelector("#player2-board")
     const allTiles = document.querySelectorAll('.tile')
     const allButtons = document.querySelectorAll('button')
-    var row = 0
-    var pos = 0
+    
     var gameFinished = false
     var prevCorrectLetters = 0
-    var points = 0
 
     p2Board.style.display = 'none'
     createRoomOnJoin()
@@ -57,10 +59,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
             var tile = gamePos.getElementsByClassName('tile')
 
-            tile[0].setAttribute('data-animation', 'PopIn')
-            tile[0].setAttribute('data-state', 'tbd')
-            tile[0].innerHTML = e.key
-            gameRow.setAttribute('letters', gameRow.getAttribute('letters') + e.key )
+            setTile(tile, 'tbd', e.key, gameRow);
         }
         else if ( e.key === 'Enter' ) {
             if( gameFinished )
@@ -127,7 +126,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         }
                         if(correctLetters != prevCorrectLetters){
                             points += Math.pow(2, correctLetters-prevCorrectLetters)
-                            document.getElementById('Points').innerHTML = `Points: ${points}`
+                            setPoints()
                             prevCorrectLetters = correctLetters
                         }
                         row += 1
@@ -164,6 +163,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
     
       
 })
+
+function setPoints(){
+    document.getElementById('Points').innerHTML = `Points: ${points}`
+}
+
+function setTile(tile, state, value, gameRow, reset=false) {
+    tile[0].setAttribute('data-animation', 'PopIn');
+    tile[0].setAttribute('data-state', state);
+    tile[0].innerHTML = value;
+    if( !reset ){
+        gameRow.setAttribute('letters', gameRow.getAttribute('letters') + value);
+        return
+    }
+    gameRow.setAttribute('letters', '');
+}
 
 function sendBoardData(guessedWord){
     sock.emit('saveBoardData', guessedWord)
@@ -231,6 +245,8 @@ function checkRoom(roomId, roomFull=false) {
     roomTB.value = roomId;
     roomLabel.innerHTML = `RoomID: ${roomId}`
     console.log(`${usernameTB.value} has joined the room ${roomId}`)
+    resetKeyboard()
+    resetPlayerBoard()
 }
 
 function updateUsername(){
@@ -253,6 +269,11 @@ function joinRoom(){
     if( usernameTB.value !== usernameLabel.innerHTML.split(':')[1].replace(' ', ''))
         updateUsername()
 
+    row = 0
+    pos = 0
+    points = 0
+    setPoints()
+    updatePlayerData(row, pos, points)
     sock.emit('disconnectRoom', roomTB.value)
     console.log(`Joining Room ... [${roomTB.value}]`)
     sock.emit('join room', roomTB.value, checkRoom)
@@ -291,4 +312,27 @@ function arrayContains (words, word){
 
 function getRandomInt(max){
     return Math.floor(Math.random() * max)
+}
+
+function resetPlayerBoard(player=1){
+    const board = player == 1 ? document.querySelector("#player1-board") : document.querySelector("#player2-board")
+
+    for( var row = 0; row < 6; row++ ){
+        var gameRow = board.children.item(row)
+        var gameItems = gameRow.getElementsByClassName('row')[0].children
+        for( var col = 0; col < 5; col++ ){
+            var gamePos = gameItems.item(col)
+            var tile = gamePos.getElementsByClassName('tile')
+
+            setTile(tile, 'empty', '', gameRow, true)
+        }
+    }
+}
+
+function resetKeyboard(){
+    var keyboard = document.querySelectorAll('.keys')
+
+    keyboard.forEach(elem => {
+        elem.removeAttribute('data-state')
+    })
 }
