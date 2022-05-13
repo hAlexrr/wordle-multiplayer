@@ -26,7 +26,9 @@ io.on('connection', (sock) => {
         word: '',
         row: 0,
         pos: 0,
-        gameFinished: false
+        gameFinished: false,
+        score: 0,
+        prevPoints: 0
     }
 
     boards[sock.id] = {

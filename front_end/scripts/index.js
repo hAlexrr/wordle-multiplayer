@@ -218,7 +218,7 @@ function updatePlayerData(){
 
 function updatePlayerList(){
     console.log("Updating player List")
-    let roomTB = document.getElementById('room')
+    let roomLabel = document.getElementById('roomLabel')
     const p2Board = document.querySelector("#player2-board")
 
     let player1Username = document.getElementById('player1-username')
@@ -233,7 +233,7 @@ function updatePlayerList(){
         player1Points.innerHTML = `Points: ${user.points}`
     })
 
-    sock.emit('getPlayer2Data', roomTB.value, function(user) {
+    sock.emit('getPlayer2Data', roomLabel.innerHTML,split(':')[1].replace(' ', ''), function(user) {
         console.log(user)
         if( user === null || user === undefined) {
             if(player2Div.style.display !== 'none' && p2Board.style.display !== 'none'){
