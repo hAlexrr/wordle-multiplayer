@@ -124,7 +124,7 @@ header .title {
 }
 
 #game game-keyboard #keyboard{
-    margin: 0 8px;
+    margin: 0 4px;
     user-select: none;
 }
 
@@ -149,6 +149,13 @@ header .title {
     color: #ffffff;
     text-transform: uppercase;
     user-select: none;
+}
+
+.gameButtons{
+  display:block;
+  height: max-content;
+  font-size: 20px;
+  /* width: max-content; */
 }
 
 .board-container {
@@ -216,16 +223,14 @@ header .title {
 
 #game game-keyboard .row{
     display: flex;
-    width: 100%;
-    margin: 0 auto 8px;
+    width: 50vh;
+    margin: 0 auto 2px;
     touch-action: manipulation;
     border-radius: 4px;
     cursor: pointer;
     user-select: none;
-    background-color: #818384;
     color: #ffffff;
-    flex: 1;
-    display: flex;
+    /* flex: 1; */
     justify-content: center;
     align-items: center;
     text-transform: uppercase;
@@ -238,18 +243,22 @@ button {
     border: 0;
     padding: 0;
     margin: 2px;
-    height: 58px;
-    border-radius: 4px;
+    height: 40px;
+    border-radius: 5px;
     cursor: pointer;
     user-select: none;
     background-color: #818384;
     color: #ffffff;
     flex: 1;
-    display: flex;
     justify-content: center;
     align-items: center;
     text-transform: uppercase;
     -webkit-tap-highlight-color: rgba(0,0,0,0.3);
+    transition: background-color .5s;
+}
+
+button:hover {
+  background-color: #4d4d4d;
 }
 
 button[data-state='absent'] {

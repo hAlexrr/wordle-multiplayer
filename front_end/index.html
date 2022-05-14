@@ -7,6 +7,7 @@
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript" src="./scripts/index.js"></script>
     <link rel="stylesheet" href="./styles/style.css">
+    <link rel="stylesheet" href="./styles/notification.css">
     <title>Multiplayer - Wordle</title>
 </head>
 <body>
@@ -20,6 +21,9 @@
             <p id="Points">Points: 0</p>
         </div>
     </header>
+    <div class="notification">
+        Same Notifcation Message
+    </div>
     <div id="game">
         <div class="player-info">
             <div class="player" id="player1">
@@ -312,9 +316,9 @@
             <div class="roomButtons">
                 <button id="joinRoom" class="roomButtons" onclick="joinRoom()">Join room</button>
                 <button id="updateUsername" class="roomButtons" onclick="updateUsername()">Update Username</button>
-                <button id="newWord" class="roomButtons" onClick="newWord">New Word</button>
-                <button id="ResetGames" class="roomButtons" onClick="newWord">Reset Games</button>
             </div>
+            <button id="newWord" class="gameButtons" onclick="newWord()">New Word</button>
+            <button id="ResetGames" class="gameButtons" onclick="resetGames()">Reset Games</button>
         </game-settings>
     </div>
 </body>

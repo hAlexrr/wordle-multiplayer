@@ -85,14 +85,25 @@ io.on('connection', (sock) => {
         console.log('Room Joined\n')
         console.log(rooms)
         changeWordForRoom(word, roomID)
-        sendRestToPlayer(roomID, sock);
+        sendResetToPlayer(roomID, sock);
         cb(roomID)
+    })
+
+    sock.on('changeRoomWord', (roomId) => {
+        var word = allWords[getRandomInt(allWords.length)] 
+        changeWordForRoom(word, roomId)
+    })
+
+    sock.on('resetPlayersBoards', (roomId) => {
+        for ( var key in rooms[roomId])
+        sendResetToPlayer(roomId, key)
     })
 
     sock.on('choose word', () => {
         var word = allWords[getRandomInt(allWords.length)]  
         console.log(word)
         users[sock.id].word = word.replace('\r', '')
+        console.log('New Word: ' + users[sock.id].word)
     })
 
     sock.on('isRealWord', (guessedWord, callback) => {
@@ -125,12 +136,12 @@ io.on('connection', (sock) => {
     })
 
     sock.on('updatePlayerData', (row, pos, points, gameFinished, cb) => {
-        // console.log(row, pos, points, gameFinished, cb)
+        console.log(row, pos, points, gameFinished, cb)
         users[sock.id].row = row
         users[sock.id].pos = pos
         users[sock.id].points = points
         users[sock.id].gameFinished = gameFinished
-        sendToOtherUser(users[sock.id].roomId, sock, 'updatePlayerList')
+        sendGameResetToPlayer(users[sock.id].roomId, sock, 'updatePlayerList')
         cb()
     })
 
@@ -200,11 +211,17 @@ io.on('connection', (sock) => {
         if (users[sock.id].gameFinished && users[opID].gameFinished)
             cb(true, boards[opID])
 
-        cb(false)
+        cb(false, null)
     })
 
     sock.on('showGameBoardsToAll', () => {
         sendToOtherUser(users[sock.id].roomId, sock, 'showGameBoardsToAll', boards[sock.id])
+    })
+
+    sock.on('send noti to room', (message, status) => {
+        message = message.replace('{word}', users[sock.id].word)
+        for ( var key in rooms[users[sock.id].roomId] )
+            io.to(key).emit('sendNotiToRoom', message, status)
     })
     
 })
@@ -217,7 +234,13 @@ server.listen(25352, () => {
     console.log('Server listening on port 25352')
 })
 
-function sendRestToPlayer(roomID, sock) {
+function sendGameResetToPlayer(roomID, sock){
+    sendToOtherUser(roomID, sock, 'resetPlayerBoard');
+    sendToOtherUser(roomID, sock, 'resetBoardData');
+    sendToOtherUser(roomID, sock, 'resetPlayerKeyboard');
+}
+
+function sendResetToPlayer(roomID, sock) {
     sendToOtherUser(roomID, sock, 'resetPlayerStats');
     sendToOtherUser(roomID, sock, 'resetPlayerBoard');
     sendToOtherUser(roomID, sock, 'resetBoardData');
@@ -256,7 +279,7 @@ function sendToOtherUser(roomID, sock, event, data=null) {
 function leaveRoom(sock, room=''){
     if ( users[sock.id] !== undefined ){
         sendToOtherUser(users[sock.id].roomId, sock, 'updatePlayerList')
-        sendRestToPlayer(users[sock.id].roomId, sock)
+        sendResetToPlayer(users[sock.id].roomId, sock)
         users[sock.id].roomId = room !== '' ? room : ''
     }
 
