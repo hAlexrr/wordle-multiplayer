@@ -19,11 +19,31 @@ div {
 
 #game {
     width: 100%;
-    max-width: 500px;
+    max-width: 800px;
     margin: 0 auto;
     height: calc(100% - 50px);
     display: flex;
     flex-flow: column;
+}
+
+.player-info {
+  display: flex;
+}
+
+#player1 {
+  /* width: 50px; */
+  margin: auto;
+  /* margin: auto; */
+  /* justify-content: flex-start; */
+}
+#player2 {
+  margin: auto;
+  /* padding-left: 0vh; */
+  /* position: absolute; */
+}
+
+.roomButtons{
+  display:inline-flex;
 }
 
 .menu-left {
@@ -33,6 +53,32 @@ div {
     align-items: center;
     width: 70px;
     justify-content: flex-start;
+}
+
+.menu-right{
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+#Points{
+  margin-left: 20px;
+}
+
+.player {
+  display:inline-block;
+}
+
+h2, h3 {
+  color: white;
+  font-weight: 700;
+  font-size:15px;
+  line-height:100%;
+  letter-spacing: 0.01em;
+  text-align: center;
+  left:0;
+  right:0;
+  pointer-events: none;
 }
 
 header p {
@@ -45,6 +91,24 @@ header p {
   left:0;
   right:0;
   pointer-events: none;
+}
+game-settings{
+  display:grid;
+  width: 150px;
+  margin: auto;
+}
+
+.labels{
+  color:white;
+  font-weight: 700;
+  font-size:15px;
+  line-height:100%;
+  letter-spacing: 0.01em;
+  text-align: left;
+  left:0;
+  right:0;
+  pointer-events: none;
+  margin:10px;
 }
 
 header .title {
@@ -60,7 +124,7 @@ header .title {
 }
 
 #game game-keyboard #keyboard{
-    margin: 0 8px;
+    margin: 0 4px;
     user-select: none;
 }
 
@@ -85,6 +149,13 @@ header .title {
     color: #ffffff;
     text-transform: uppercase;
     user-select: none;
+}
+
+.gameButtons{
+  display:block;
+  height: max-content;
+  font-size: 20px;
+  /* width: max-content; */
 }
 
 .board-container {
@@ -152,16 +223,14 @@ header .title {
 
 #game game-keyboard .row{
     display: flex;
-    width: 100%;
-    margin: 0 auto 8px;
+    width: 50vh;
+    margin: 0 auto 2px;
     touch-action: manipulation;
     border-radius: 4px;
     cursor: pointer;
     user-select: none;
-    background-color: #818384;
     color: #ffffff;
-    flex: 1;
-    display: flex;
+    /* flex: 1; */
     justify-content: center;
     align-items: center;
     text-transform: uppercase;
@@ -174,18 +243,22 @@ button {
     border: 0;
     padding: 0;
     margin: 2px;
-    height: 58px;
-    border-radius: 4px;
+    height: 40px;
+    border-radius: 5px;
     cursor: pointer;
     user-select: none;
     background-color: #818384;
     color: #ffffff;
     flex: 1;
-    display: flex;
     justify-content: center;
     align-items: center;
     text-transform: uppercase;
     -webkit-tap-highlight-color: rgba(0,0,0,0.3);
+    transition: background-color .5s;
+}
+
+button:hover {
+  background-color: #4d4d4d;
 }
 
 button[data-state='absent'] {
